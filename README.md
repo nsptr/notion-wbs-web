@@ -38,12 +38,11 @@ npm run dev
 
 ## 프로젝트 설정
 
-`src/lib/projects.config.ts` 에서 DB별 표시 옵션을 설정합니다.
+`src/lib/projects.config.ts` 에서 DB를 등록합니다. 대시보드 제목은 Notion DB 제목을 그대로 사용합니다.
 
 ```ts
 const config = {
-  "database-id": {
-    titleOverride: "프로젝트 표시명",  // Notion DB 제목 대신 표시할 이름
-  },
+  "database-id-1": {},
+  "database-id-2": {},
 };
 ```
