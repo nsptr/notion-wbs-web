@@ -61,23 +61,32 @@ function calcBar(start: Date, end: Date, yearStart: Date, totalDays: number) {
 export function RoadmapSection({ items, showFromToday = false }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showPast, setShowPast] = useState(false);
+  const [showPastMonths, setShowPastMonths] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
   const YEAR = today.getFullYear();
   const yearStart = new Date(YEAR, 0, 1);
   const yearEnd = new Date(YEAR, 11, 31);
-  const totalDays = (yearEnd.getTime() - yearStart.getTime()) / 86400000 + 1;
 
-  const months = Array.from({ length: 12 }, (_, i) => ({
-    label: `${i + 1}월`,
-    w: (new Date(YEAR, i + 1, 0).getDate() / totalDays) * 100,
-  }));
+  const visibleStart = showPastMonths ? yearStart : lastMonthStart;
+  const totalDays = (yearEnd.getTime() - visibleStart.getTime()) / 86400000 + 1;
 
-  const todayPct = ((today.getTime() - yearStart.getTime()) / 86400000 / totalDays) * 100;
+  const hiddenMonthsCount = lastMonthStart.getMonth(); // e.g. April=3 → Jan~Mar hidden
+  const hiddenMonthsLabel = hiddenMonthsCount > 0 ? `1월~${hiddenMonthsCount}월` : null;
+
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const monthStart = new Date(YEAR, i, 1);
+    if (monthStart < visibleStart) return null;
+    return {
+      label: `${i + 1}월`,
+      w: (new Date(YEAR, i + 1, 0).getDate() / totalDays) * 100,
+    };
+  }).filter(Boolean) as { label: string; w: number }[];
+
+  const todayPct = ((today.getTime() - visibleStart.getTime()) / 86400000 / totalDays) * 100;
 
   const allCategories = [...new Set(items.map(i => i.category).filter(Boolean) as string[])];
 
@@ -151,15 +160,25 @@ export function RoadmapSection({ items, showFromToday = false }: Props) {
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[800px]">
-        {/* 지난 항목 토글 */}
-        {hiddenCount > 0 && (
+        {/* 토글 버튼 영역 */}
+        {(hiddenCount > 0 || hiddenMonthsLabel) && (
           <div className="mb-3 flex items-center gap-2">
-            <button
-              onClick={() => setShowPast(v => !v)}
-              className="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded px-2.5 py-1 transition-colors"
-            >
-              {showPast ? "▲ 지난 항목 접기" : `▼ 지난 항목 보기 (${hiddenCount}개)`}
-            </button>
+            {hiddenMonthsLabel && (
+              <button
+                onClick={() => setShowPastMonths(v => !v)}
+                className="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded px-2.5 py-1 transition-colors"
+              >
+                {showPastMonths ? `◀ ${hiddenMonthsLabel} 접기` : `▶ ${hiddenMonthsLabel} 펼치기`}
+              </button>
+            )}
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setShowPast(v => !v)}
+                className="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded px-2.5 py-1 transition-colors"
+              >
+                {showPast ? "▲ 지난 항목 접기" : `▼ 지난 항목 보기 (${hiddenCount}개)`}
+              </button>
+            )}
           </div>
         )}
         {/* 월 헤더 */}
@@ -189,7 +208,7 @@ export function RoadmapSection({ items, showFromToday = false }: Props) {
         <div className="border-t border-slate-800">
           {groups.map(group => {
             const isOpen = expanded.has(group.name);
-            const bar = calcBar(group.dateStart, group.dateEnd, yearStart, totalDays);
+            const bar = calcBar(group.dateStart, group.dateEnd, visibleStart, totalDays);
 
             return (
               <div key={group.name}>
@@ -229,7 +248,7 @@ export function RoadmapSection({ items, showFromToday = false }: Props) {
                   return display.map(item => {
                     const s = new Date(item.dateStart!);
                     const e = new Date(item.dateEnd ?? item.dateStart!);
-                    const sub = calcBar(s, e, yearStart, totalDays);
+                    const sub = calcBar(s, e, visibleStart, totalDays);
                     const barColor = STATUS_BAR_COLOR[item.status] ?? group.color;
                     return (
                       <div key={item.id} className="flex items-center h-8 bg-slate-900/60 border-b border-slate-800/30">
