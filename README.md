@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 2026 WBS 대시보드
 
-## Getting Started
+Notion WBS 데이터베이스를 연동한 연간 월별 로드맵 대시보드입니다.
 
-First, run the development server:
+## 기술 스택
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16** (App Router, Server Components)
+- **Notion API** (`@notionhq/client`)
+- **Tailwind CSS**
+- **Vercel** 배포
+
+## 주요 기능
+
+- 2026년 1월~12월 고정 Gantt 차트
+- 프로젝트(Notion DB) 단위 분리 표시
+- 카테고리(화면 분류)별 그룹화 및 하위 항목 클릭 확장
+- **예정 / 진행중 / 완료** 상태 자동 반영
+  - Notion `상태` 필드 우선 적용
+  - 필드 없을 경우 날짜 기준 자동 추론
+- 오늘 기준선 표시
+- 매일 자동 갱신 (Vercel ISR, `revalidate = 86400`)
+
+## 환경 변수
+
+`.env.local` 파일을 생성하고 아래 값을 입력하세요.
+
+```
+NOTION_API_KEY=your_notion_integration_token
+NOTION_DATABASE_IDS=database_id_1,database_id_2
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 로컬 실행
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 프로젝트 설정
 
-## Learn More
+`src/lib/projects.config.ts` 에서 DB별 표시 옵션을 설정합니다.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```ts
+const config = {
+  "database-id": {
+    titleOverride: "프로젝트 표시명",  // Notion DB 제목 대신 표시할 이름
+  },
+};
+```
