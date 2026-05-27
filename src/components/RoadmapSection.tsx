@@ -60,10 +60,12 @@ function calcBar(start: Date, end: Date, yearStart: Date, totalDays: number) {
 
 export function RoadmapSection({ items, showFromToday = false }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showPast, setShowPast] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
   const YEAR = today.getFullYear();
   const yearStart = new Date(YEAR, 0, 1);
@@ -95,7 +97,8 @@ export function RoadmapSection({ items, showFromToday = false }: Props) {
       const ends = inYear.map(item => new Date(item.dateEnd ?? item.dateStart!).getTime());
       const dateEnd = new Date(Math.max(...ends));
 
-      if (showFromToday && dateEnd < currentMonthStart) return null;
+      // 한 달 전 이전에 끝난 항목은 기본적으로 숨김 (showPast 토글로 표시)
+      if (!showPast && dateEnd < lastMonthStart) return null;
 
       return {
         name: cat,
@@ -137,9 +140,28 @@ export function RoadmapSection({ items, showFromToday = false }: Props) {
     </div>
   );
 
+  const hiddenCount = allCategories.filter(cat => {
+    const inYear = items.filter(i => i.category === cat && i.dateStart).filter(i => {
+      const e = new Date(i.dateEnd ?? i.dateStart!);
+      return e >= new Date(YEAR, 0, 1) && e < lastMonthStart;
+    });
+    return inYear.length > 0;
+  }).length;
+
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[800px]">
+        {/* 지난 항목 토글 */}
+        {hiddenCount > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            <button
+              onClick={() => setShowPast(v => !v)}
+              className="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded px-2.5 py-1 transition-colors"
+            >
+              {showPast ? "▲ 지난 항목 접기" : `▼ 지난 항목 보기 (${hiddenCount}개)`}
+            </button>
+          </div>
+        )}
         {/* 월 헤더 */}
         <div className="flex mb-1">
           <div className="w-80 shrink-0" />
